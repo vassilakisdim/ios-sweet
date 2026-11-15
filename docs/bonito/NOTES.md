@@ -2,6 +2,9 @@
 
 ## Current state — 2026-11-15
 
+- The phone has returned to Android 12 `SP2A.220505.008` and ADB enumerates it online. The CI shim image was accepted by ABL through `fastboot boot`; no partition was flashed or erased, and visible shim execution is still unconfirmed.
+- Working tree adds patch `0082-bonito-machine-config.patch` with a `MACHINE_CONFIG=BONITO` scaffold and updates the Bonito ADT to remove `xiaomi,sweet` from the root match list. It still reuses Sweet-derived kernel code and is not complete Bonito peripheral support. These changes are not yet pushed or built.
+- Google's SDM670 DTS lists virtual timer PPI 3, corresponding to GIC INTID 19. XNU workflow dispatch `43730585776` was cancelled before assigning a runner (`runner_id=0`); no patch application or compilation occurred. GitHub CLI authentication is restored.
 - Local fork branch: `port/bonito-bringup`, based on the user's fork commit `a563d834b366cafbb3dd912ce4b45c68b9a12480`; that fork is two commits ahead of upstream and includes the SDM670 shim/DTB work.
 - Shim CI run `43724648790` built the initial image and experimental ADT; `43725471683` rebuilt the header-metadata variant; `43729672326` built the TWRP-matched LZ4/header/AVB image. No XNU kernel, iOS payload, or iOS root image exists yet.
 - The initial 638,976-byte image (`95c4bc85557808900d70b46554a84566dbe51d483a6ca344c8e6bf2f05b75afe`) was rejected by ABL with `Unsupported`. Correcting its malformed Android 17 OS metadata to Android 12 did not solve the rejection. Adding an unsigned AVB footer and substituting TWRP's ramdisk/DTB while retaining a raw shim kernel also remained rejected.
@@ -18,9 +21,9 @@
 - Main engineering blockers: a Bonito XNU platform target and memory-safe ADT, framebuffer handoff details, eMMC/SDHCI support, and Bonito input/display drivers. Sweet's current UFS root path is incompatible with Bonito's `/dev/block/mmcblk0`.
 - `tools/mkadt.py --bonito` is now an experimental ADT staging profile. It emitted an 8,340-byte ADT; structure inspection confirmed RAM `0xa2000000–0x17e2c0000`, the 36 MiB splash reservation, 1080 × 2160 geometry, and cluster IDs 0 for CPUs 0–5 / 1 for CPUs 6–7. It omits UFS. The 4320-byte ABL splash stride remains an explicit unverified candidate; TWRP's 4352-byte recovery pitch describes other buffers.
 - The CI artifact from run `43729672326` is 64 MiB, SHA-256 `f10897eb94f338d6bf977720eedd4bdc12b1d279565481692d561489c48026`, with a v2 header, TWRP-matched LZ4 frame, 51,810,304-byte pre-footer payload, and unsigned AVB hash footer. `fastboot boot` returned `Sending OKAY` and `Booting OKAY` using the CI image with the repository's Bonito DTB and shim ramdisk.
-- After the CI image handoff, both ADB and fastboot listings remained empty on repeated checks. The screen state is still pending user observation. No partition was flashed or erased.
+- After the CI image handoff, both ADB and fastboot listings were initially empty. A later read-only check found the phone online over ADB in Android 12 again. The screen state during the temporary shim boot was not recorded. No partition was flashed or erased.
 - Local checks passed: the pinned AOSP packer plus repository unpacker round-tripped a dummy boot-header-v2 image, the Bonito ADT assertions passed, and `tools/validate-repo.py` validated all 81 patch files, 16 Python scripts, and 7 shell scripts. The new source build and CI workflow have now reproduced the accepted image layout.
 
 ## Next concrete action
 
-Confirm the handset's display state and regain a known bootloader/Android state after the successful shim handoff. Then build the first Bonito XNU target and validate it with the same temporary boot path. Keep eMMC and user partitions read-only; do not flash partitions until the XNU target, console, eMMC read path, and restore procedure are verified.
+Commit and push the Bonito machine-config/ADT changes, then rerun XNU CI with `MACHINE_CONFIG=BONITO`. Resolve patch/build failures before attempting a temporary XNU boot. Keep eMMC and user partitions read-only; do not flash partitions until the XNU target, console, eMMC read path, and restore procedure are verified.

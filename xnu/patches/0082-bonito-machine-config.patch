@@ -1,0 +1,176 @@
+diff --git a/makedefs/MakeInc.def b/makedefs/MakeInc.def
+--- a/makedefs/MakeInc.def
++++ b/makedefs/MakeInc.def
+@@ -29,6 +29,6 @@
+ else ifneq ($(findstring _host,$(RC_ProjectName)),)
+ SUPPORTED_ARM64_MACHINE_CONFIGS = NONE
+ else
+-SUPPORTED_ARM64_MACHINE_CONFIGS = BCM2837 T6000 T8101 T8103 VMAPPLE SWEET
++SUPPORTED_ARM64_MACHINE_CONFIGS = BCM2837 T6000 T8101 T8103 VMAPPLE SWEET BONITO
+ 
+ endif
+@@ -61,6 +61,7 @@
+ MACHINE_FLAGS_ARM64_VMAPPLE = -DARM64_BOARD_CONFIG_VMAPPLE              -march=armv8.5a
+ MACHINE_FLAGS_ARM64_BCM2837 = -DARM64_BOARD_CONFIG_BCM2837
+ MACHINE_FLAGS_ARM64_SWEET = -DARM64_BOARD_CONFIG_SWEET                -march=armv8.2-a+crypto
++MACHINE_FLAGS_ARM64_BONITO = -DARM64_BOARD_CONFIG_BONITO -DARM64_BOARD_CONFIG_SWEET -march=armv8.2-a+crypto
+ 
+ 
+ #
+@@ -262,6 +263,6 @@ export ARCH_STRING_FOR_CURRENT_MACHINE_CONFIG := $(shell echo $(CURRENT_ARCH_CONFIG) | tr A-Z a-z)
+ ifneq ($(filter arm64,$(ARCH_STRING_FOR_CURRENT_MACHINE_CONFIG)),)
+ # sweet's Cortex-A76/A55 have no pointer authentication: stay plain arm64
+-ifneq ($(CURRENT_MACHINE_CONFIG),SWEET)
++ifeq ($(filter SWEET BONITO,$(CURRENT_MACHINE_CONFIG)),)
+ export ARCH_STRING_FOR_CURRENT_MACHINE_CONFIG := arm64e
+ endif
+ endif
+diff --git a/pexpert/pexpert/arm64/Makefile b/pexpert/pexpert/arm64/Makefile
+--- a/pexpert/pexpert/arm64/Makefile
++++ b/pexpert/pexpert/arm64/Makefile
+@@ -17,7 +17,8 @@ PRIVATE_KERNELFILES = \
+ 	boot.h \
+ 	H13.h \
+ 	VMAPPLE.h \
+-	SWEET.h
++	SWEET.h \
++	BONITO.h
+ 
+ 
+ # Headers installed into System.framework/PrivateHeaders (userspace internal SDK only).
+diff --git a/pexpert/pexpert/arm64/board_config.h b/pexpert/pexpert/arm64/board_config.h
+--- a/pexpert/pexpert/arm64/board_config.h
++++ b/pexpert/pexpert/arm64/board_config.h
+@@ -97,6 +97,6 @@
+ #endif  /* ARM64_BOARD_CONFIG_BCM2837 */
+ 
+-#ifdef ARM64_BOARD_CONFIG_SWEET
++#if defined(ARM64_BOARD_CONFIG_SWEET) && !defined(ARM64_BOARD_CONFIG_BONITO)
+ #include <pexpert/arm64/SWEET.h>
+ 
+ #define MAX_L2_CLINE                   6
+@@ -105,7 +105,18 @@
+ 
+ #define CORE_NCTRS                     8 /* Placeholder; KPC is not enabled for this target */
+ 
+-#endif  /* ARM64_BOARD_CONFIG_SWEET */
++#endif  /* ARM64_BOARD_CONFIG_SWEET && !ARM64_BOARD_CONFIG_BONITO */
++
++#ifdef ARM64_BOARD_CONFIG_BONITO
++#include <pexpert/arm64/BONITO.h>
++
++#define MAX_L2_CLINE                   6
++#define MAX_CPUS                       8
++#define MAX_CPU_CLUSTERS               2
++
++#define CORE_NCTRS                     8 /* Placeholder; KPC is not enabled for this target */
++
++#endif  /* ARM64_BOARD_CONFIG_BONITO */
+ 
+ #ifdef ARM64_BOARD_CONFIG_VMAPPLE
+ #include <pexpert/arm64/VMAPPLE.h>
+diff --git a/pexpert/pexpert/arm64/BONITO.h b/pexpert/pexpert/arm64/BONITO.h
+new file mode 100644
+--- /dev/null
++++ b/pexpert/pexpert/arm64/BONITO.h
+@@ -0,0 +1,21 @@
++/*
++ * Board config for Google Pixel 3a XL (bonito), Qualcomm SDM670.
++ *
++ * The early Bonito target shares XNU bring-up code developed for SWEET:
++ * plain arm64, 16K pages, GICv3 Group 1 IRQ handling, and no Apple monitor.
++ * Keep the actual MACHINE_CONFIG and DT match IDs BONITO-specific. Hardware
++ * support such as SDHCI/eMMC, panel power, Synaptics touch, and SMP is separate.
++ */
++#ifndef _PEXPERT_ARM64_BONITO_H
++#define _PEXPERT_ARM64_BONITO_H
++
++#include <pexpert/arm64/SWEET.h>
++
++#define BONITO                    1
++/* Existing shared XNU port patches use this feature switch. */
++#define ARM64_BOARD_CONFIG_SWEET  1
++
++/* SDM670's arm,armv8-timer virtual PPI is PPI 3 => GIC INTID 19. */
++#define BONITO_VTIMER_INTID       19
++
++#endif /* _PEXPERT_ARM64_BONITO_H */
+diff --git a/iokit/KernelConfigTables.cpp b/iokit/KernelConfigTables.cpp
+--- a/iokit/KernelConfigTables.cpp
++++ b/iokit/KernelConfigTables.cpp
+@@ -34,10 +34,18 @@ const char * gIOKernelConfigTables =
+ #if defined(ARM64_BOARD_CONFIG_SWEET)
+     "   {"
+     "     'IOClass'         = SweetPlatformExpert;"
+     "     'IOProviderClass' = IOPlatformExpertDevice;"
+     "     'IONameMatch'     = 'xiaomi,sweet';"
+     "     'IOProbeScore'    = 10000:32;"
+     "   },"
+ #endif
++#if defined(ARM64_BOARD_CONFIG_BONITO)
++    "   {"
++    "     'IOClass'         = SweetPlatformExpert;"
++    "     'IOProviderClass' = IOPlatformExpertDevice;"
++    "     'IONameMatch'     = 'google,bonito';"
++    "     'IOProbeScore'    = 10000:32;"
++    "   },"
++#endif
+     "   {"
+     "     'IOClass'         = IOPanicPlatform;"
+diff --git a/iokit/KernelConfigTables.cpp b/iokit/KernelConfigTables.cpp
+--- a/iokit/KernelConfigTables.cpp
++++ b/iokit/KernelConfigTables.cpp
+@@ -41,6 +49,9 @@ const char * gIOKernelConfigTables =
+     "     'IONameMatch'     = 'qcom,kryo470';"
+     "     'IOProbeScore'    = 10000:32;"
+     "   },"
++#if defined(ARM64_BOARD_CONFIG_BONITO)
++    "   { 'IOClass' = SweetCPU; 'IOProviderClass' = IOPlatformDevice; 'IONameMatch' = 'qcom,kryo360'; 'IOProbeScore' = 10000:32; },"
++#endif
+ #endif
+     "   {"
+     "     'IOClass'         = IOPanicPlatform;"
+diff --git a/iokit/Kernel/arm/SweetPlatformExpert.cpp b/iokit/Kernel/arm/SweetPlatformExpert.cpp
+--- a/iokit/Kernel/arm/SweetPlatformExpert.cpp
++++ b/iokit/Kernel/arm/SweetPlatformExpert.cpp
+@@ -68,6 +68,10 @@ SweetPlatformExpert::getTargetName(char *name, int maxLength)
+ 	if (name == NULL || maxLength <= 0) {
+ 		return false;
+ 	}
++#if defined(BONITO)
++	strlcpy(name, "bonito", (size_t)maxLength);
++#else
+ 	strlcpy(name, "sweet", (size_t)maxLength);
++#endif
+ 	return true;
+ }
+@@ -79,7 +83,11 @@ SweetPlatformExpert::getProductName(char *name, int maxLength)
+ 	if (name == NULL || maxLength <= 0) {
+ 		return false;
+ 	}
++#if defined(BONITO)
++	strlcpy(name, "Google Pixel 3a XL", (size_t)maxLength);
++#else
+ 	strlcpy(name, "Redmi Note 10 Pro", (size_t)maxLength);
++#endif
+ 	return true;
+ }
+ #endif /* SWEET */
+diff --git a/bsd/conf/Makefile.template b/bsd/conf/Makefile.template
+--- a/bsd/conf/Makefile.template
++++ b/bsd/conf/Makefile.template
+@@ -45,5 +45,5 @@ SFLAGS+= -include meta_features.h
+ # This provider is built into SWEET; other boards use their normal kext.
+-ifeq ($(CURRENT_MACHINE_CONFIG),SWEET)
++ifneq ($(filter SWEET BONITO,$(CURRENT_MACHINE_CONFIG)),)
+ SWEET_PTHREAD_ROOT = $(SRCROOT)/bsd/pthread/sweet_libpthread
+ SWEET_PTHREAD_INC = -I$(SWEET_PTHREAD_ROOT) -I$(SWEET_PTHREAD_ROOT)/private -I$(SWEET_PTHREAD_ROOT)/include
+ sweet_pthread_init.o_INCFLAGS = $(SWEET_PTHREAD_INC)
+diff --git a/libkern/conf/Makefile.template b/libkern/conf/Makefile.template
+--- a/libkern/conf/Makefile.template
++++ b/libkern/conf/Makefile.template
+@@ -18,3 +18,3 @@ SFLAGS+= -include meta_features.h
+-ifeq ($(CURRENT_MACHINE_CONFIG),SWEET)
++ifneq ($(filter SWEET BONITO,$(CURRENT_MACHINE_CONFIG)),)
+ SWEET_AES_ROOT = $(SRCROOT)/libkern/crypto/sweet_bearssl
+ SWEET_AES_INC = -I$(SWEET_AES_ROOT)/inc -I$(SWEET_AES_ROOT)/src

@@ -90,9 +90,9 @@ def node(name, props=(), children=()):
 def build(seed=None, qemu=False, highmem=False, bonito=False):
     """Generate a Sweet, QEMU, highmem-Sweet, or experimental Bonito ADT.
 
-    The Bonito profile keeps Sweet compatibility markers only so the existing
-    SWEET-config XNU can be used for an early one-CPU experiment. It is not a
-    Bonito XNU platform target.
+    The Bonito profile uses the BONITO machine configuration. Several shared
+    early bring-up implementations still carry SWEET names, but the device-tree
+    root and CPU match IDs identify Bonito directly.
     """
     if sum((qemu, highmem, bonito)) > 1:
         raise ValueError('--qemu, --highmem, and --bonito are mutually exclusive')
@@ -259,14 +259,13 @@ def build(seed=None, qemu=False, highmem=False, bonito=False):
     # dram-size we expose, so XNU maps it but never allocates into it.
     pram = node('pram', [ph(), ('reg', u64(panic_base) + u64(PANIC_LOG_SIZE))])
 
-    # Identity of the iPhone X whose userland runs here: compatible[0] is
-    # hw.model/hw.target (D22AP), model is hw.machine/hw.product
-    # (iPhone10,3). 'xiaomi,sweet' stays for SweetPlatformExpert matching.
-    compatible = cstr('D22AP') + cstr('iPhone10,3') + cstr('xiaomi,sweet')
+    # Keep the iPhone X identity used by the iOS 16 userland while exposing
+    # the actual hardware platform to XNU and IOKit.
+    compatible = cstr('D22AP') + cstr('iPhone10,3')
     if bonito:
         compatible += cstr('qcom,sdm670') + cstr('google,bonito')
     else:
-        compatible += cstr('qcom,sm7150')
+        compatible += cstr('xiaomi,sweet') + cstr('qcom,sm7150')
     compatible += cstr('AppleARM')
     return node('device-tree', [
         ph(),

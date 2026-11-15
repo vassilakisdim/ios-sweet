@@ -160,6 +160,10 @@
   },
   "port_status": {
     "bonito_shim_source_present": true,
+    "xnu_machine_config": "BONITO scaffold in xnu/patches/0082-bonito-machine-config.patch; not yet built",
+    "xnu_workflow_last_run_id": 43730585776,
+    "xnu_workflow_last_run_conclusion": "cancelled before runner assignment; no steps ran",
+    "last_observed_usb_state": "Android 12 online over ADB after temporary CI shim boot",
     "shim_build_workflow_run_id": 43717125955,
     "shim_build_workflow_conclusion": "failure",
     "shim_build_failure": "Ubuntu mkbootimg wrapper could not import gki.generate_gki_certificate; no artifact uploaded",
