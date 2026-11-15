@@ -4,7 +4,7 @@
 
 **Target:** Google Pixel 3a XL (`bonito`)
 
-**Current state (2026-11-15):** the fork now contains Bonito shim source and a Bonito hardware inventory; no iOS kernel or XNU payload has been built or booted. The existing shim workflow was run once and failed before producing an artifact because Ubuntu's packaged `mkbootimg` wrapper imports a missing `gki` module. Commit `0317fb3` locally replaces the packaging dependency with a pinned AOSP header-v2 tool; a dummy image smoke check passed, but the actual cross-compiled shim workflow has not rerun. The local workflow also packages the experimental Bonito ADT. The phone is back in Android.
+**Current state (2026-11-15):** the fork contains Bonito shim source and a Bonito hardware inventory; no iOS kernel or XNU payload has been built or booted. The first shim CI run failed because Ubuntu's packaged `mkbootimg` wrapper imported a missing `gki` module. The fix is published on `port/bonito-bringup`; CI run `43724648790` then built the shim and uploaded the image plus the experimental ADT. The first temporary boot attempt was rejected by the ABL with `Unsupported`; no partition was written. Header comparison found Android 17 / malformed patch-level metadata in the original shim script, so a local follow-up now uses Android 12 / May 2022 metadata for the next boot attempt. The phone is currently in the bootloader.
 
 ## Goal and base
 
@@ -98,8 +98,10 @@ Keep each milestone isolated and logged. The verified recovery boot confirmed th
 - Rebooted with `adb reboot`; verified Android `bonito`, build `SP2A.220505.008`, and active slot `_a` returned. Recovery had automatically mounted `/data` and `/metadata` read-write; no partition was flashed or erased, and incidental recovery writes cannot be ruled out.
 - Read the fork's existing Bonito shim CI run `43717125955`; cross-compilation reached boot-image packaging, where Ubuntu's packaged `mkbootimg` failed due to its missing `gki` Python module. No artifact was uploaded.
 - Committed locally, not yet published, a workflow change using AOSP's standalone Android boot header v2 tool at pinned commit `0efe12324857ad410d64677e66347434b2346526`.
+- Pushed the reviewed branch `port/bonito-bringup` and ran shim workflow `43724648790` successfully; both `bonito-shim-boot` and `bonito-target-adt` artifacts uploaded. The 638,976-byte shim image has boot header v2, kernel/ramdisk/DTB addresses matching the known-good recovery image, and SHA-256 `95c4bc85557808900d70b46554a84566dbe51d483a6ca344c8e6bf2f05b75afe`.
+- Tried `fastboot boot` on that artifact. The bootloader rejected it with `Error verifying the received boot.img: Unsupported`; this was a temporary boot command and did not flash or erase a partition. The failed image's `os_version` word was `0x22000000` (Android 17.0.0, no patch level). A local follow-up changes the image metadata to Android 12 / May 2022; the pinned AOSP packer smoke check now produces `0x18000165`. The corrected cross-compiled image still needs a CI build and device attempt.
 - **No iOS kernel/XNU payload has been built or booted. The shim source exists, but there is no successfully packaged image in this workspace yet.**
 
 ## Immediate next action
 
-Complete review of the local `port/bonito-bringup` patch, publish it to the user's fork after approval, and rerun the shim workflow. Download and inspect the resulting v2 image, then use `fastboot boot` for the reversible shim console/probe milestone. In parallel, adapt the Sweet ADT generator to use Bonito's candidate RAM range, live GIC/timer/CPU facts, and no UFS node; this does not make Sweet's XNU platform target Bonito-compatible by itself. Do not build a userdata image until eMMC read-only access and a restore plan are proven.
+Commit and push the Android 12 header metadata correction, rerun the shim workflow, download and inspect the new v2 image, and retry `fastboot boot` for the reversible shim console/probe milestone. In parallel, retain the experimental Bonito ADT as staging only; it does not make Sweet's XNU platform target Bonito-compatible by itself. Do not build a userdata image until eMMC read-only access and a restore plan are proven.

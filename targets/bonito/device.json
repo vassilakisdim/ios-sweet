@@ -163,7 +163,12 @@
     "shim_build_workflow_run_id": 43717125955,
     "shim_build_workflow_conclusion": "failure",
     "shim_build_failure": "Ubuntu mkbootimg wrapper could not import gki.generate_gki_certificate; no artifact uploaded",
-    "boot_image_built": false,
+    "latest_shim_build_workflow_run_id": 43724648790,
+    "latest_shim_build_workflow_conclusion": "success",
+    "boot_image_built": true,
+    "boot_image_sha256": "95c4bc85557808900d70b46554a84566dbe51d483a6ca344c8e6bf2f05b75afe",
+    "temporary_boot_attempt": "rejected by ABL with Unsupported; no partition was written",
+    "last_observed_device_mode": "bootloader",
     "xnu_built": false,
     "device_fastboot_boot_supported": true,
     "ios_fastboot_boot_tested": false,
@@ -171,7 +176,7 @@
     "recovery_auto_mounted_data_read_write": true,
     "recovery_auto_mounted_metadata_read_write": true,
     "incidental_recovery_writes_known": false,
-    "build_path": "Authenticated GitHub Actions; local shim workflow packaging fix is pending review",
+    "build_path": "Authenticated GitHub Actions; shim workflow now builds and uploads artifacts",
     "primary_blocker": "Bonito still needs a target-specific XNU platform/ADT and an eMMC root driver"
   },
   "unresolved_hardware": [
