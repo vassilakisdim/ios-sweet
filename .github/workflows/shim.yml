@@ -23,6 +23,7 @@ jobs:
           # Ubuntu's mkbootimg wrapper imports gki.generate_gki_certificate,
           # which is absent from the package on the current runner image.
           # Use the standalone AOSP header-v2 tool at a pinned revision.
+          mkdir -p .tools
           git clone https://android.googlesource.com/platform/system/tools/mkbootimg .tools/mkbootimg
           git -C .tools/mkbootimg checkout --quiet 0efe12324857ad410d64677e66347434b2346526
           mkdir -p .tools/bin
