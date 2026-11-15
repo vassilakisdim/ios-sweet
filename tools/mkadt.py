@@ -2,7 +2,8 @@
 """Build the minimal Apple Device Tree that the SWEET xnu needs to boot.
 
 Only what the early boot path actually reads (see NOTES.md); every MMIO
-address comes from the sweet live FDT. Usage:  mkadt.py OUT.adt [--dump] [--qemu] [--highmem]
+address comes from a live FDT or the selected emulator profile. Usage:
+  mkadt.py OUT.adt [--dump] [--qemu] [--highmem] [--bonito]
 """
 import hashlib, os, struct, sys
 
@@ -23,6 +24,13 @@ PANIC_LOG_SIZE = 0x100000
 # carve-out is in the low bank and the dynamic pools are limited below 4G.
 HIGH_PHYS_BASE = 0x100000000
 HIGH_MEM_SIZE = 0xfcc00000
+# Bonito candidate: the final contiguous /proc/iomem System RAM segment,
+# aligned up to 32 MiB. It excludes the lower reserved holes and leaves a
+# 1 MiB panic log at the top. Validate this range against an XNU build before
+# booting; it is not a complete reconstruction of the live memory map.
+BONITO_PHYS_BASE = 0xa2000000
+BONITO_MEM_END = 0x17e2c0000
+BONITO_MEM_SIZE = BONITO_MEM_END - BONITO_PHYS_BASE
 # /arm-io children are relative to this; it must not be 0 (serial_init bails)
 SOC_BASE = 0x01000000
 
@@ -31,6 +39,11 @@ GICR, GICR_SIZE = 0x17a60000, 0x100000
 FB, FB_SIZE = 0x9c000000, 0x1700000
 SWEET_ECID = 0x5357454554000001  # 'SWEET' + 1, synthetic
 FB_W, FB_H, FB_STRIDE = 1080, 2400, 1080 * 4
+# Bonito uses the same continuous-splash base, but a 1080x2160 command-mode
+# panel and a 36 MiB reservation. The ABL splash stride is not confirmed; the
+# current 4320-byte value is a shim-side candidate and must be checked on-device.
+BONITO_FB_SIZE = 0x2400000
+BONITO_FB_W, BONITO_FB_H, BONITO_FB_STRIDE = 1080, 2160, 1080 * 4
 # Internal UFS host (ufshc@1d84000 "ufs_mem"); QEMU virt has none
 UFS, UFS_SIZE = 0x01d84000, 0x3000
 TIMEBASE = 19200000
@@ -74,9 +87,24 @@ def node(name, props=(), children=()):
     return n
 
 
-def build(seed=None, qemu=False, highmem=False):
-    """qemu=True: same tree, but with QEMU virt's GIC addresses and CNTFRQ (tools/qemu-sweet.py)."""
-    phys_base, mem_size = (HIGH_PHYS_BASE, HIGH_MEM_SIZE) if highmem else (PHYS_BASE, MEM_SIZE)
+def build(seed=None, qemu=False, highmem=False, bonito=False):
+    """Generate a Sweet, QEMU, highmem-Sweet, or experimental Bonito ADT.
+
+    The Bonito profile keeps Sweet compatibility markers only so the existing
+    SWEET-config XNU can be used for an early one-CPU experiment. It is not a
+    Bonito XNU platform target.
+    """
+    if sum((qemu, highmem, bonito)) > 1:
+        raise ValueError('--qemu, --highmem, and --bonito are mutually exclusive')
+    phys_base, mem_size = (
+        (BONITO_PHYS_BASE, BONITO_MEM_SIZE) if bonito else
+        (HIGH_PHYS_BASE, HIGH_MEM_SIZE) if highmem else
+        (PHYS_BASE, MEM_SIZE)
+    )
+    fb_size = BONITO_FB_SIZE if bonito else FB_SIZE
+    fb_w = BONITO_FB_W if bonito else FB_W
+    fb_h = BONITO_FB_H if bonito else FB_H
+    fb_stride = BONITO_FB_STRIDE if bonito else FB_STRIDE
     # Carve the panic log off the top so the kernel never allocates over it.
     panic_base = phys_base + mem_size - PANIC_LOG_SIZE
     mem_size -= PANIC_LOG_SIZE
@@ -92,8 +120,8 @@ def build(seed=None, qemu=False, highmem=False):
         ('random-seed', seed),
         ('debug-enabled', u32(1)),
         ('embedded-panic-log-size', u32(PANIC_LOG_SIZE)),
-        ('firmware-version', cstr('sweet-shim')),
-        ('system-firmware-version', cstr('sweet-shim')),
+        ('firmware-version', cstr('bonito-shim' if bonito else 'sweet-shim')),
+        ('system-firmware-version', cstr('bonito-shim' if bonito else 'sweet-shim')),
         # iBoot's SHA-384 of the boot manifest; /sbin/mount -P 1 exits unless
         # it exists (bind mounts /private/preboot/<hex>/usr/standalone/firmware,
         # tolerating a missing directory). Fixed stand-in value.
@@ -129,19 +157,20 @@ def build(seed=None, qemu=False, highmem=False):
         # with CSR_ALLOW_UNRESTRICTED_FS (vm_unix.c shared region checks).
         node('asmb', [ph(), ('lp-sip0', u64(0x6f)), ('lp-sip1', u32(1))])])
 
-    # SWEET SMP: all eight cores in physical-core order (0-5 Cortex-A55,
-    # 6-7 Cortex-A76), one homogeneous cluster. The kernel defaults to one
-    # and uses cpus=N to select an initial prefix (N <= 8).
-    # QEMU retains its original single-CPU tree: its MPIDRs differ from sweet.
+    # SWEET SMP: one homogeneous cluster. Bonito's live FDT has two clusters
+    # (cores 0-5 and 6-7); its exact clock rates are intentionally omitted.
+    # Start either handset with cpus=1 until XNU PSCI/SMP is board-validated.
+    # QEMU retains its original single-CPU tree and MPIDR.
     cpu_nodes = []
     for core in range(1 if qemu else 8):
-        cpu_nodes.append(node(f'cpu{core}', [
+        cpu_props = [
             ph(),
             ('device_type', cstr('cpu')),
-            ('compatible', cstr('qcom,kryo470') + cstr('ARM,v8')),
+            ('compatible', cstr('arm,armv8') + cstr('qcom,kryo360')) if bonito else
+                ('compatible', cstr('qcom,kryo470') + cstr('ARM,v8')),
             ('reg', u32(core << 8)),  # actual MPIDR Aff1:Aff0, NOT logical ID
             ('cpu-id', u32(core)),   # descriptive: XNU assigns IDs by DT order
-            ('cluster-id', u32(0)),  # descriptive; see ml_parse_cpu_topology
+            ('cluster-id', u32(1 if bonito and core >= 6 else 0)),
             ('cluster-type', u32(0)),  # homogeneous CLUSTER_TYPE_SMP, not AMP
             ('die-cluster-id', u32(0)),
             ('cluster-core-id', u32(core)),
@@ -149,12 +178,16 @@ def build(seed=None, qemu=False, highmem=False):
             ('l3-cache-id', u32(0)),     # shared L3
             ('state', cstr('running' if core == 0 else 'stopped')),
             ('timebase-frequency', u32(timebase)),
-            ('clock-frequency', u32(2304000000 if core >= 6 else 1804800000)),
-            ('bus-frequency', u32(100000000)),
-            ('memory-frequency', u32(1866000000)),
-            ('peripheral-frequency', u32(timebase)),
-            ('fixed-frequency', u32(timebase)),
-        ]))
+        ]
+        if not bonito:
+            cpu_props.extend([
+                ('clock-frequency', u32(2304000000 if core >= 6 else 1804800000)),
+                ('bus-frequency', u32(100000000)),
+                ('memory-frequency', u32(1866000000)),
+                ('peripheral-frequency', u32(timebase)),
+                ('fixed-frequency', u32(timebase)),
+            ])
+        cpu_nodes.append(node(f'cpu{core}', cpu_props))
     cpus = node('cpus', [ph(), ('#address-cells', u32(1)),
                          ('#size-cells', u32(0))], cpu_nodes)
 
@@ -191,10 +224,10 @@ def build(seed=None, qemu=False, highmem=False):
 
     fbcon = node('sweet-fbcon', [
         ph(),
-        ('reg', u64(FB, FB_SIZE)),
-        ('width', u32(FB_W)),
-        ('height', u32(FB_H)),
-        ('stride', u32(FB_STRIDE)),
+        ('reg', u64(FB, fb_size)),
+        ('width', u32(fb_w)),
+        ('height', u32(fb_h)),
+        ('stride', u32(fb_stride)),
     ])
 
     # bsd/dev/sweet_ufs.c: the UFS host ABL leaves running (absolute physical reg).
@@ -229,20 +262,30 @@ def build(seed=None, qemu=False, highmem=False):
     # Identity of the iPhone X whose userland runs here: compatible[0] is
     # hw.model/hw.target (D22AP), model is hw.machine/hw.product
     # (iPhone10,3). 'xiaomi,sweet' stays for SweetPlatformExpert matching.
+    compatible = cstr('D22AP') + cstr('iPhone10,3') + cstr('xiaomi,sweet')
+    if bonito:
+        compatible += cstr('qcom,sdm670') + cstr('google,bonito')
+    else:
+        compatible += cstr('qcom,sm7150')
+    compatible += cstr('AppleARM')
     return node('device-tree', [
         ph(),
-        ('compatible', cstr('D22AP') + cstr('iPhone10,3') + cstr('xiaomi,sweet') + cstr('qcom,sm7150') + cstr('AppleARM')),
+        ('compatible', compatible),
         ('model', cstr('iPhone10,3')),
         ('target-type', cstr('D22')),
         ('target-sub-type', cstr('D22AP')),
         ('manufacturer', cstr('Apple Inc.')),
         ('#address-cells', u32(2)),
         ('#size-cells', u32(2)),
-    ], [chosen, defaults, cpus, arm_io, fbcon, buttons, pram] + product + ([] if qemu else [ufs]))
+    ], [chosen, defaults, cpus, arm_io, fbcon, buttons, pram] + product +
+       ([] if qemu or bonito else [ufs]))
 
 
 if __name__ == '__main__':
-    root = build(qemu='--qemu' in sys.argv, highmem='--highmem' in sys.argv)
+    if len(sys.argv) < 2:
+        raise SystemExit('usage: mkadt.py OUT.adt [--dump] [--qemu] [--highmem] [--bonito]')
+    root = build(qemu='--qemu' in sys.argv, highmem='--highmem' in sys.argv,
+                 bonito='--bonito' in sys.argv)
     blob = adt.serialize(root)
     open(sys.argv[1], 'wb').write(blob)
     if '--dump' in sys.argv:

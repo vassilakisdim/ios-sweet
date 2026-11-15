@@ -14,10 +14,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install ARM64 cross-compiler and mkbootimg
+      - name: Install ARM64 cross-compiler and boot-image tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu cpio gzip mkbootimg
+          sudo apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu cpio gzip
+          # Ubuntu's mkbootimg wrapper imports gki.generate_gki_certificate,
+          # which is absent from the package on the current runner image.
+          # Use the standalone AOSP header-v2 tool at a pinned revision.
+          git clone https://android.googlesource.com/platform/system/tools/mkbootimg .tools/mkbootimg
+          git -C .tools/mkbootimg checkout --quiet 0efe12324857ad410d64677e66347434b2346526
+          mkdir -p .tools/bin
+          cat > .tools/bin/mkbootimg <<'EOF'
+          #!/usr/bin/env bash
+          exec python3 "$GITHUB_WORKSPACE/.tools/mkbootimg/mkbootimg.py" "$@"
+          EOF
+          chmod +x .tools/bin/mkbootimg
+          echo "$GITHUB_WORKSPACE/.tools/bin" >> "$GITHUB_PATH"
 
       - name: Build bonito shim-boot.img
         run: |

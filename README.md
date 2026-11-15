@@ -8,6 +8,10 @@ As of **2026-10-18** the phone boots to the **iOS home screen**. You can unlock 
 
 > Experimental bring-up, not a usable phone OS. Many things are missing or stubbed (see below), and Apple's security model is mostly switched off. It installs into the `userdata` partition and so **erases Android's user data**.
 
+## Pixel 3a XL (`bonito`) development track
+
+This fork also carries an early Bonito shim port. The Sweet kernel configuration and UFS/display/input drivers documented below target the Redmi Note 10 Pro and are not yet a Bonito XNU port. Bonito hardware inventory, build/boot progress, and open blockers are tracked in [`docs/bonito/PORTING.md`](docs/bonito/PORTING.md) and [`docs/bonito/NOTES.md`](docs/bonito/NOTES.md). At this stage no Bonito XNU kernel or iOS payload has been built or booted.
+
 ## What works
 
 | Area | State |

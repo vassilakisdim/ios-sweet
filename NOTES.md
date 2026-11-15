@@ -1,3 +1,14 @@
+# Bonito port track — 2026-11-15 (read first)
+
+The active hardware target for this fork is now the Google Pixel 3a XL (`bonito`, SDM670), while the existing XNU source and successful iOS userland notes below describe the Redmi Note 10 Pro (`sweet`, SM7150) only. Do not treat the Sweet kernel, ADT, UFS driver, display, or touch configuration as Bonito-compatible.
+
+- The user's fork is checked out locally at `C:\p3axl project\ios-bonito-fork`, branch `port/bonito-bringup`, from fork commit `a563d834b366cafbb3dd912ce4b45c68b9a12480`. The existing Bonito-specific commits add the SDM670 shim diagnostics and DTB.
+- Bonito facts and the separate bring-up log are in [`docs/bonito/PORTING.md`](docs/bonito/PORTING.md), [`docs/bonito/NOTES.md`](docs/bonito/NOTES.md), and [`targets/bonito/device.json`](targets/bonito/device.json). Live FDT captures and identifiers remain ignored under `research/`.
+- The first existing Bonito shim workflow run (`43717125955`) failed at boot-image packaging: Ubuntu's `mkbootimg` script could not import `gki.generate_gki_certificate`. Cross-compilation had progressed through the shim objects. A local fix is being prepared to use a pinned standalone AOSP header-v2 tool.
+- Added an experimental `tools/mkadt.py --bonito` staging profile: candidate upper RAM, live GIC/timer data, two CPU clusters, physical panel geometry, and no UFS node. Python syntax and serialized ADT structure checks passed; no XNU has consumed it. Its `xiaomi,sweet` compatibility marker and 4320-byte splash stride are temporary assumptions, both documented in `docs/bonito/PORTING.md`.
+- A valid GitHub CLI login is available again. Local changes are not yet published. No iOS kernel or payload has been built; the phone is in Android 12. No partition was flashed or erased. The temporary TWRP recovery auto-mounted `/data` and `/metadata` read-write, so incidental recovery writes cannot be ruled out.
+- Next: complete and review the local Bonito workflow/ADT patch, publish only after the user approves, rerun CI, verify the shim artifact, and temporarily boot it. Continue the XNU target and eMMC read-only path before any iOS root image work.
+
 # iOS 16 on sweet (Redmi Note 10 Pro, SM7150) - working notes
 
 ## Agent handoff / active work (2026-10-15, latest)

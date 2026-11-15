@@ -12,7 +12,10 @@ Checks:
   3. Shell script syntax:
      - All tools/*.sh, shim/*.sh, and xnu/patches/*.sh pass bash -n check.
 """
-import argparse, glob, os, py_compile, re, subprocess, sys
+import argparse, glob, os, py_compile, re, shutil, subprocess, sys
+
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -106,10 +109,16 @@ def validate_shell_scripts(verbose=False):
         glob.glob(os.path.join(REPO_ROOT, 'xnu/patches/*.sh'))
     )
     errors = []
+    bash = os.environ.get('BASH') or shutil.which('bash')
+    if not bash:
+        print(red("[-] Shell syntax validation skipped: bash was not found (set BASH to its executable path)."))
+        return False
 
     for path in sh_files:
         rel = os.path.relpath(path, REPO_ROOT)
-        res = subprocess.run(['bash', '-n', path], capture_output=True, text=True)
+        # Use the resolved executable path. Passing the bare name can select
+        # the Windows WSL launcher even when Git Bash is earlier on PATH.
+        res = subprocess.run([bash, '-n', path], capture_output=True, text=True)
         if res.returncode != 0:
             errors.append(f"{rel}: {res.stderr.strip()}")
         elif verbose:

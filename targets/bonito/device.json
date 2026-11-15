@@ -1,0 +1,184 @@
+{
+  "target": "bonito",
+  "marketing_name": "Google Pixel 3a XL",
+  "manufacturer": "Google",
+  "observed_at": "2026-11-15",
+  "source_revision": "45263bee51df4a0f55cdf9c649af886399488ddb",
+  "device_observations": {
+    "adb_product": "bonito",
+    "adb_device": "bonito",
+    "model": "Pixel 3a XL",
+    "sku": "G020A",
+    "soc": "Qualcomm SDM670 / Snapdragon 670",
+    "android_release": "12",
+    "android_build": "SP2A.220505.008",
+    "android_security_patch": "2022-05-05",
+    "bootloader_state": "unlocked",
+    "active_slot": "_a",
+    "dtb_index": 0,
+    "dtbo_index": 8,
+    "fastboot_getvar": {
+      "product": "bonito",
+      "unlocked": "yes",
+      "current_slot": "a"
+    },
+    "storage_device": "/dev/block/mmcblk0",
+    "userdata_partition": "/dev/block/mmcblk0p72",
+    "display_physical_size": "1080x2160",
+    "touch_input_device": "synaptics_dsx",
+    "touch_raw_axes": {
+      "x": [0, 1079],
+      "y": [0, 2159]
+    },
+    "button_input_devices": ["gpio-keys", "qpnp_pon"],
+    "free_data_space_gib_approx": 46,
+    "android_memtotal_kib": 3678616
+  },
+  "live_device_tree": {
+    "source": "official Pixel 3a XL TWRP 3.7.1_12-1 booted with fastboot boot; raw FDT and iomem are ignored under research/",
+    "recovery_image_sha256": "e0781b592354a87ef8369cce36a0ed61e5bd751058d0eadf68c632c3568678d0",
+    "fdt_version": 17,
+    "fdt_bytes": 450375,
+    "node_count": 2588,
+    "dtb_index": 0,
+    "dtbo_index": 8,
+    "memory_banks_inclusive": [
+      ["0x80000000", "0xffffffff"],
+      ["0x100000000", "0x17e2bffff"]
+    ],
+    "system_ram_segments_inclusive": [
+      ["0x80000000", "0x856fffff"],
+      ["0x85d00000", "0x85dfffff"],
+      ["0x85f00000", "0x85fbffff"],
+      ["0x88f00000", "0x8aafffff"],
+      ["0x97a17000", "0x9e3fffff"],
+      ["0x9f800000", "0xa17fffff"],
+      ["0xa1c11000", "0x17e2bffff"]
+    ],
+    "initial_contiguous_kernel_ram_candidate": {
+      "base": "0xa2000000",
+      "end_exclusive": "0x17e2c0000",
+      "size_bytes": "0xdc2c0000",
+      "reason": "32 MiB aligned subrange of the final contiguous /proc/iomem System RAM segment; candidate only, not yet used by a built XNU target"
+    },
+    "active_panel": {
+      "vendor": "Samsung",
+      "model": "sofef00",
+      "mode": "DSI command mode",
+      "resolution": "1080x2160",
+      "timing": "timing0",
+      "refresh_hz": 60,
+      "bits_per_pixel": 24,
+      "color_order": "rgb_swap_rgb",
+      "reset_gpio": "0x4b",
+      "te_pin_select": 1
+    },
+    "twrp_drm_framebuffer": {
+      "resolution": "1080x2160",
+      "format": "XB24",
+      "pitch_bytes": 4352,
+      "active_buffer_count": 2,
+      "scope": "recovery DRM buffers only; not the bootloader splash buffer"
+    },
+    "emmc_host": {
+      "compatible": "qcom,sdhci-msm-v5",
+      "register_base": "0x7c4000",
+      "status": "ok",
+      "bus_width_bits": 8,
+      "supported_modes": ["HS400_1p8v", "HS200_1p8v", "DDR_1p8v"],
+      "clock_names": ["iface_clk", "core_clk", "ice_core_clk", "bus_aggr_clk"]
+    },
+    "touch_controller": {
+      "compatible": "synaptics,dsx-i2c",
+      "i2c_controller_base": "0xa84000",
+      "i2c_address": "0x20",
+      "irq_gpio": "0x7d",
+      "reset_gpio": "0x63",
+      "switch_gpio": "0x87",
+      "reset_delay_ms": 20,
+      "reset_active_ms": 1,
+      "display_resolution": "1080x2160"
+    },
+    "continuous_splash_reservation": {
+      "base": "0x9c000000",
+      "size_bytes": "0x2400000"
+    },
+    "psci_method": "smc",
+    "cpu_nodes": 8,
+    "cpu_map": "6 lower cluster cores + 2 higher cluster cores",
+    "cpu_clusters": {
+      "cluster0_cpu_nodes": [0, 1, 2, 3, 4, 5],
+      "cluster1_cpu_nodes": [6, 7]
+    },
+    "cpu_mpidr_reg_values": ["0x0", "0x100", "0x200", "0x300", "0x400", "0x500", "0x600", "0x700"],
+    "gic": {
+      "compatible": "arm,gic-v3",
+      "distributor": "0x17a00000",
+      "redistributor": "0x17a60000"
+    },
+    "timer_frequency_hz": 19200000
+  },
+  "public_kernel_artifact": {
+    "repository": "https://android.googlesource.com/device/google/bonito-kernel",
+    "commit": "ee16fca33c644a4d1b7059b627786968406217bd",
+    "commit_message": "Merge SP2A.220505.002",
+    "dtbo_entry": 8,
+    "dtbo_board_id": "0x31e",
+    "dtbo_model": "Google Inc. MSM sdm670 B4 PVT v1.0"
+  },
+  "public_device_tree_candidates": {
+    "cpu_nodes": 8,
+    "cpu_map": "6 lower cluster cores + 2 higher cluster cores",
+    "psci_method": "smc",
+    "gic": {
+      "compatible": "arm,gic-v3",
+      "distributor": "0x17a00000",
+      "redistributor": "0x17a60000"
+    },
+    "timer_frequency_hz": 19200000,
+    "emmc_host_candidate": {
+      "compatible": "qcom,sdhci-msm-v5",
+      "register_base": "0x7c4000",
+      "bus_width_bits": 8,
+      "public_base_tree_status": "disabled",
+      "live_tree_status": "ok"
+    },
+    "continuous_splash_candidate": {
+      "base": "0x9c000000",
+      "size_bytes": "0x2400000"
+    },
+    "display_overlay_variants": [
+      "sofef00 Samsung DSI command mode",
+      "s6e3fa7 Samsung DSI command mode",
+      "nt37700f Tianma DSI command mode"
+    ]
+  },
+  "platform_facts_from_public_specs": {
+    "ram_gib": 4,
+    "storage_capacity_gib": 64,
+    "storage_type": "eMMC"
+  },
+  "port_status": {
+    "bonito_shim_source_present": true,
+    "shim_build_workflow_run_id": 43717125955,
+    "shim_build_workflow_conclusion": "failure",
+    "shim_build_failure": "Ubuntu mkbootimg wrapper could not import gki.generate_gki_certificate; no artifact uploaded",
+    "boot_image_built": false,
+    "xnu_built": false,
+    "device_fastboot_boot_supported": true,
+    "ios_fastboot_boot_tested": false,
+    "partitions_flashed_or_erased_by_host": false,
+    "recovery_auto_mounted_data_read_write": true,
+    "recovery_auto_mounted_metadata_read_write": true,
+    "incidental_recovery_writes_known": false,
+    "build_path": "Authenticated GitHub Actions; local shim workflow packaging fix is pending review",
+    "primary_blocker": "Bonito still needs a target-specific XNU platform/ADT and an eMMC root driver"
+  },
+  "unresolved_hardware": [
+    "Bonito ADT integration for RAM banks and reserved regions; safe XNU allocator setup",
+    "bootloader splash-buffer stride/pixel format and command-mode refresh behavior",
+    "SDHCI/eMMC controller handoff and XNU driver behavior",
+    "Synaptics DSX bus, interrupt, reset, and power details",
+    "PSCI, interrupt controller, and CPU bring-up in XNU"
+  ]
+}
