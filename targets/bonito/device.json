@@ -162,7 +162,7 @@
     "bonito_shim_source_present": true,
     "xnu_machine_config": "BONITO scaffold in xnu/patches/0082-bonito-machine-config.patch; not yet built",
     "xnu_workflow_last_run_id": 43730585776,
-    "xnu_workflow_last_run_conclusion": "cancelled before runner assignment; no steps ran",
+    "xnu_workflow_last_run_conclusion": "cancelled: macos-14 runner retired; workflow updated to macos-15",
     "last_observed_usb_state": "Android 12 online over ADB after temporary CI shim boot",
     "shim_build_workflow_run_id": 43717125955,
     "shim_build_workflow_conclusion": "failure",
