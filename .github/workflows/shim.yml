@@ -6,6 +6,8 @@ on:
     branches: [main]
     paths:
       - "shim/**"
+      - "tools/adt.py"
+      - "tools/mkadt.py"
       - ".github/workflows/shim.yml"
 
 jobs:
@@ -37,8 +39,19 @@ jobs:
           chmod +x shim/build.sh
           bash shim/build.sh
 
+      - name: Generate experimental Bonito ADT
+        run: |
+          python3 tools/mkadt.py shim/out/bonito.adt --bonito
+          python3 tools/adt.py dump shim/out/bonito.adt > shim/out/bonito.adt.txt
+
       - uses: actions/upload-artifact@v4
         with:
           name: bonito-shim-boot
           path: shim/out/shim-boot.img
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bonito-target-adt
+          path: shim/out/bonito.adt*
           retention-days: 7

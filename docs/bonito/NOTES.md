@@ -4,7 +4,7 @@
 
 - Local fork branch: `port/bonito-bringup`, based on the user's fork commit `a563d834b366cafbb3dd912ce4b45c68b9a12480`; that fork is two commits ahead of upstream and includes the SDM670 shim/DTB work.
 - This fork branch has a Bonito shim source tree and DTB, but still has no built shim image, XNU kernel/payload, or iOS root image.
-- Re-authenticated GitHub CLI is available. Existing shim CI run `43717125955` failed during `mkbootimg` invocation (`ModuleNotFoundError: No module named 'gki'`) after installing Ubuntu's cross-compiler. Commit `0317fb3` locally fixes this with pinned AOSP `mkbootimg` source; it has not been pushed.
+- Re-authenticated GitHub CLI is available. Existing shim CI run `43717125955` failed during `mkbootimg` invocation (`ModuleNotFoundError: No module named 'gki'`) after installing Ubuntu's cross-compiler. Commit `0317fb3` locally fixes this with pinned AOSP `mkbootimg` source; the workflow now also emits a `bonito-target-adt` artifact. These changes have not been pushed.
 - Device observed over ADB as Google Pixel 3a XL (`bonito`), Android 12 `SP2A.220505.008`, active slot `_a`, bootloader unlocked.
 - Verified the reversible bootloader path: fastboot reports `product=bonito`, unlocked `yes`, slot `a`; `fastboot reboot` returned the phone to Android and ADB detected it again.
 - The handset reports `dtb_idx=0` / `dtbo_idx=8`. Official TWRP 3.7.1_12-1 SHA-256 `e0781b592354a87ef8369cce36a0ed61e5bd751058d0eadf68c632c3568678d0` matched TeamWin's checksum; `fastboot boot` returned `OKAY` and recovery ADB ran as root for the FDT and `/proc/iomem` read.

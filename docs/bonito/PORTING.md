@@ -4,7 +4,7 @@
 
 **Target:** Google Pixel 3a XL (`bonito`)
 
-**Current state (2026-11-15):** the fork now contains Bonito shim source and a Bonito hardware inventory; no iOS kernel or XNU payload has been built or booted. The existing shim workflow was run once and failed before producing an artifact because Ubuntu's packaged `mkbootimg` wrapper imports a missing `gki` module. Commit `0317fb3` locally replaces the packaging dependency with a pinned AOSP header-v2 tool; a dummy image smoke check passed, but the actual cross-compiled shim workflow has not rerun. The phone is back in Android.
+**Current state (2026-11-15):** the fork now contains Bonito shim source and a Bonito hardware inventory; no iOS kernel or XNU payload has been built or booted. The existing shim workflow was run once and failed before producing an artifact because Ubuntu's packaged `mkbootimg` wrapper imports a missing `gki` module. Commit `0317fb3` locally replaces the packaging dependency with a pinned AOSP header-v2 tool; a dummy image smoke check passed, but the actual cross-compiled shim workflow has not rerun. The local workflow also packages the experimental Bonito ADT. The phone is back in Android.
 
 ## Goal and base
 
