@@ -161,8 +161,8 @@
   "port_status": {
     "bonito_shim_source_present": true,
     "xnu_machine_config": "BONITO scaffold in xnu/patches/0082-bonito-machine-config.patch; CI recognizes config, compile currently blocked",
-    "xnu_workflow_last_run_id": 43734055796,
-    "xnu_workflow_last_run_conclusion": "failure: Xcode 16.4 IIG emits IORPC.kernelContent absent from XNU 8796 header; Sweet provider staging restricted to SWEET; local fixes pending CI",
+    "xnu_workflow_last_run_id": 43735755075,
+    "xnu_workflow_last_run_conclusion": "failure: libpthread and BearSSL staged for BONITO, but Xcode 16.4 IIG resolves IOKit/IORPC.h without kernelContent; updated patch 0083 applies to both header copies, rerun pending",
     "last_observed_usb_state": "Android 12 online over ADB after temporary CI shim boot",
     "shim_build_workflow_run_id": 43717125955,
     "shim_build_workflow_conclusion": "failure",
@@ -181,7 +181,7 @@
     "recovery_auto_mounted_metadata_read_write": true,
     "incidental_recovery_writes_known": false,
     "build_path": "Authenticated GitHub Actions; shim workflow now builds and uploads artifacts",
-    "primary_blocker": "XNU 8796 IIG compatibility and Bonito provider staging must pass CI; a successful XNU build and eMMC root driver are still outstanding"
+    "primary_blocker": "XNU 8796 IIG compatibility patch must pass CI; a successful XNU build and eMMC root driver are still outstanding"
   },
   "unresolved_hardware": [
     "Bonito ADT integration for RAM banks and reserved regions; safe XNU allocator setup",

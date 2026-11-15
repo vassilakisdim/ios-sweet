@@ -12,3 +12,17 @@ diff --git a/iokit/DriverKit/IORPC.h b/iokit/DriverKit/IORPC.h
 +#endif /* KERNEL */
  };
  typedef struct IORPC IORPC;
+diff --git a/iokit/IOKit/IORPC.h b/iokit/IOKit/IORPC.h
+--- a/iokit/IOKit/IORPC.h
++++ b/iokit/IOKit/IORPC.h
+@@ -222,6 +222,9 @@ struct IORPC {
+ struct IORPC {
+ 	IORPCMessageMach * message;
+ 	IORPCMessageMach * reply;
+ 	uint32_t           sendSize;
+ 	uint32_t           replySize;
++#ifdef KERNEL
++	IORPCMessage *     kernelContent;
++#endif /* KERNEL */
+ };
+ typedef struct IORPC IORPC;
