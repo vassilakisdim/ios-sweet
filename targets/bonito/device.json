@@ -161,8 +161,8 @@
   "port_status": {
     "bonito_shim_source_present": true,
     "xnu_machine_config": "BONITO scaffold in xnu/patches/0082-bonito-machine-config.patch; not yet built",
-    "xnu_workflow_last_run_id": 43730585776,
-    "xnu_workflow_last_run_conclusion": "cancelled: macos-14 runner retired; workflow updated to macos-15",
+    "xnu_workflow_last_run_id": 43732154991,
+    "xnu_workflow_last_run_conclusion": "failure: patch 0082 contexts did not apply; BONITO configuration unsupported; corrected patch checked against archived build tree, rerun pending",
     "last_observed_usb_state": "Android 12 online over ADB after temporary CI shim boot",
     "shim_build_workflow_run_id": 43717125955,
     "shim_build_workflow_conclusion": "failure",
@@ -181,7 +181,7 @@
     "recovery_auto_mounted_metadata_read_write": true,
     "incidental_recovery_writes_known": false,
     "build_path": "Authenticated GitHub Actions; shim workflow now builds and uploads artifacts",
-    "primary_blocker": "Bonito still needs a target-specific XNU platform/ADT and an eMMC root driver"
+    "primary_blocker": "Bonito machine-config patch must pass CI; a successful XNU build and eMMC root driver are still outstanding"
   },
   "unresolved_hardware": [
     "Bonito ADT integration for RAM banks and reserved regions; safe XNU allocator setup",

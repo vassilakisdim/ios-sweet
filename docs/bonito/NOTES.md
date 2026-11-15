@@ -3,8 +3,8 @@
 ## Current state — 2026-11-15
 
 - The phone has returned to Android 12 `SP2A.220505.008` and ADB enumerates it online. The CI shim image was accepted by ABL through `fastboot boot`; no partition was flashed or erased, and visible shim execution is still unconfirmed.
-- Working tree adds patch `0082-bonito-machine-config.patch` with a `MACHINE_CONFIG=BONITO` scaffold and updates the Bonito ADT to remove `xiaomi,sweet` from the root match list. It still reuses Sweet-derived kernel code and is not complete Bonito peripheral support. These changes are not yet pushed or built.
-- Google's SDM670 DTS lists virtual timer PPI 3, corresponding to GIC INTID 19. XNU workflow dispatches `43730585776` and `43731792820` were cancelled because the workflow still requested GitHub's retired `macos-14` image. The workflow now targets `macos-15`; no patch application or compilation occurred yet. GitHub CLI authentication is restored.
+- Patch `0082-bonito-machine-config.patch` adds a `MACHINE_CONFIG=BONITO` scaffold, and the Bonito ADT no longer claims the `xiaomi,sweet` root match. It still reuses Sweet-derived kernel code and is not complete Bonito peripheral support. The machine-config patch correction is local and not yet pushed.
+- Google's SDM670 DTS lists virtual timer PPI 3, corresponding to GIC INTID 19. XNU dispatches `43730585776` and `43731792820` were cancelled because the workflow requested retired `macos-14`. Run `43732154991` on macOS 15 reached the build but patch `0082` was skipped because its contexts did not match; XNU config then rejected `BONITO`. The corrected patch passes an apply check against the run's build-tree artifact. No kernel compiled.
 - Local fork branch: `port/bonito-bringup`, based on the user's fork commit `a563d834b366cafbb3dd912ce4b45c68b9a12480`; that fork is two commits ahead of upstream and includes the SDM670 shim/DTB work.
 - Shim CI run `43724648790` built the initial image and experimental ADT; `43725471683` rebuilt the header-metadata variant; `43729672326` built the TWRP-matched LZ4/header/AVB image. No XNU kernel, iOS payload, or iOS root image exists yet.
 - The initial 638,976-byte image (`95c4bc85557808900d70b46554a84566dbe51d483a6ca344c8e6bf2f05b75afe`) was rejected by ABL with `Unsupported`. Correcting its malformed Android 17 OS metadata to Android 12 did not solve the rejection. Adding an unsigned AVB footer and substituting TWRP's ramdisk/DTB while retaining a raw shim kernel also remained rejected.
@@ -26,4 +26,4 @@
 
 ## Next concrete action
 
-Commit and push the Bonito machine-config/ADT changes, then rerun XNU CI with `MACHINE_CONFIG=BONITO`. Resolve patch/build failures before attempting a temporary XNU boot. Keep eMMC and user partitions read-only; do not flash partitions until the XNU target, console, eMMC read path, and restore procedure are verified.
+Commit and push the corrected patch `0082`, then rerun XNU CI with `MACHINE_CONFIG=BONITO`. The corrected patch applies to run `43732154991`'s archived source tree; that run did not produce a kernel. Resolve configuration/build failures before attempting a temporary XNU boot. Keep eMMC and user partitions read-only; do not flash partitions until the XNU target, console, eMMC read path, and restore procedure are verified.

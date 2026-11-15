@@ -28,13 +28,11 @@ diff --git a/makedefs/MakeInc.def b/makedefs/MakeInc.def
 diff --git a/pexpert/pexpert/arm64/Makefile b/pexpert/pexpert/arm64/Makefile
 --- a/pexpert/pexpert/arm64/Makefile
 +++ b/pexpert/pexpert/arm64/Makefile
-@@ -17,7 +17,8 @@ PRIVATE_KERNELFILES = \
- 	boot.h \
- 	H13.h \
- 	VMAPPLE.h \
+@@ -21,2 +21,3 @@ PRIVATE_KERNELFILES = \
 -	SWEET.h
 +	SWEET.h \
 +	BONITO.h
+ 
  
  
  # Headers installed into System.framework/PrivateHeaders (userspace internal SDK only).
@@ -98,15 +96,10 @@ new file mode 100644
 diff --git a/iokit/KernelConfigTables.cpp b/iokit/KernelConfigTables.cpp
 --- a/iokit/KernelConfigTables.cpp
 +++ b/iokit/KernelConfigTables.cpp
-@@ -34,10 +34,18 @@ const char * gIOKernelConfigTables =
- #if defined(ARM64_BOARD_CONFIG_SWEET)
-     "   {"
-     "     'IOClass'         = SweetPlatformExpert;"
-     "     'IOProviderClass' = IOPlatformExpertDevice;"
+@@ -37,6 +37,14 @@ const char * gIOKernelConfigTables =
      "     'IONameMatch'     = 'xiaomi,sweet';"
      "     'IOProbeScore'    = 10000:32;"
      "   },"
- #endif
 +#if defined(ARM64_BOARD_CONFIG_BONITO)
 +    "   {"
 +    "     'IOClass'         = SweetPlatformExpert;"
@@ -116,46 +109,17 @@ diff --git a/iokit/KernelConfigTables.cpp b/iokit/KernelConfigTables.cpp
 +    "   },"
 +#endif
      "   {"
-     "     'IOClass'         = IOPanicPlatform;"
-diff --git a/iokit/KernelConfigTables.cpp b/iokit/KernelConfigTables.cpp
---- a/iokit/KernelConfigTables.cpp
-+++ b/iokit/KernelConfigTables.cpp
-@@ -41,6 +49,9 @@ const char * gIOKernelConfigTables =
+     "     'IOClass'         = SweetCPU;"
+     "     'IOProviderClass' = IOPlatformDevice;"
+@@ -43,5 +51,8 @@ const char * gIOKernelConfigTables =
      "     'IONameMatch'     = 'qcom,kryo470';"
      "     'IOProbeScore'    = 10000:32;"
      "   },"
 +#if defined(ARM64_BOARD_CONFIG_BONITO)
 +    "   { 'IOClass' = SweetCPU; 'IOProviderClass' = IOPlatformDevice; 'IONameMatch' = 'qcom,kryo360'; 'IOProbeScore' = 10000:32; },"
 +#endif
- #endif
      "   {"
-     "     'IOClass'         = IOPanicPlatform;"
-diff --git a/iokit/Kernel/arm/SweetPlatformExpert.cpp b/iokit/Kernel/arm/SweetPlatformExpert.cpp
---- a/iokit/Kernel/arm/SweetPlatformExpert.cpp
-+++ b/iokit/Kernel/arm/SweetPlatformExpert.cpp
-@@ -68,6 +68,10 @@ SweetPlatformExpert::getTargetName(char *name, int maxLength)
- 	if (name == NULL || maxLength <= 0) {
- 		return false;
- 	}
-+#if defined(BONITO)
-+	strlcpy(name, "bonito", (size_t)maxLength);
-+#else
- 	strlcpy(name, "sweet", (size_t)maxLength);
-+#endif
- 	return true;
- }
-@@ -79,7 +83,11 @@ SweetPlatformExpert::getProductName(char *name, int maxLength)
- 	if (name == NULL || maxLength <= 0) {
- 		return false;
- 	}
-+#if defined(BONITO)
-+	strlcpy(name, "Google Pixel 3a XL", (size_t)maxLength);
-+#else
- 	strlcpy(name, "Redmi Note 10 Pro", (size_t)maxLength);
-+#endif
- 	return true;
- }
- #endif /* SWEET */
+     "     'IOClass'         = AppleKeyStore;"
 diff --git a/bsd/conf/Makefile.template b/bsd/conf/Makefile.template
 --- a/bsd/conf/Makefile.template
 +++ b/bsd/conf/Makefile.template
