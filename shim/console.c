@@ -21,9 +21,11 @@ static int row;
 
 static void con_kick_dsi(void)
 {
+#ifdef __aarch64__
         __asm__ volatile("dsb sy" ::: "memory");
         *(volatile uint32_t *)SDE_CTL0_START = 1;
         __asm__ volatile("dsb sy" ::: "memory");
+#endif
 }
 
 void con_clear(uint32_t bg)

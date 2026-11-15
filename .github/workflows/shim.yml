@@ -21,6 +21,7 @@ jobs:
 
       - name: Build bonito shim-boot.img
         run: |
+          sed -i 's/\r$//' shim/build.sh
           chmod +x shim/build.sh
           bash shim/build.sh
 
