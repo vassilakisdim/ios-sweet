@@ -4,7 +4,7 @@
 
 **Target:** Google Pixel 3a XL (`bonito`)
 
-**Current state (2026-11-15):** the fork now contains Bonito shim source and a Bonito hardware inventory; no iOS kernel or XNU payload has been built or booted. The existing shim workflow was run once and failed before producing an artifact because Ubuntu's packaged `mkbootimg` wrapper imports a missing `gki` module. A local workflow fix is being prepared against a pinned AOSP header-v2 tool. The phone is back in Android.
+**Current state (2026-11-15):** the fork now contains Bonito shim source and a Bonito hardware inventory; no iOS kernel or XNU payload has been built or booted. The existing shim workflow was run once and failed before producing an artifact because Ubuntu's packaged `mkbootimg` wrapper imports a missing `gki` module. Commit `0317fb3` locally replaces the packaging dependency with a pinned AOSP header-v2 tool; a dummy image smoke check passed, but the actual cross-compiled shim workflow has not rerun. The phone is back in Android.
 
 ## Goal and base
 
@@ -97,7 +97,7 @@ Keep each milestone isolated and logged. The verified recovery boot confirmed th
 - In its root ADB shell, read `/sys/firmware/fdt` and `/proc/iomem`; recorded the physical RAM segments, reserved ranges, selected panel, and enabled eMMC controller. Raw captures remain ignored under `research/` because the FDT includes device identifiers.
 - Rebooted with `adb reboot`; verified Android `bonito`, build `SP2A.220505.008`, and active slot `_a` returned. Recovery had automatically mounted `/data` and `/metadata` read-write; no partition was flashed or erased, and incidental recovery writes cannot be ruled out.
 - Read the fork's existing Bonito shim CI run `43717125955`; cross-compilation reached boot-image packaging, where Ubuntu's packaged `mkbootimg` failed due to its missing `gki` Python module. No artifact was uploaded.
-- Prepared a local, not-yet-published workflow change that uses AOSP's standalone Android boot header v2 tool at pinned commit `0efe12324857ad410d64677e66347434b2346526`.
+- Committed locally, not yet published, a workflow change using AOSP's standalone Android boot header v2 tool at pinned commit `0efe12324857ad410d64677e66347434b2346526`.
 - **No iOS kernel/XNU payload has been built or booted. The shim source exists, but there is no successfully packaged image in this workspace yet.**
 
 ## Immediate next action

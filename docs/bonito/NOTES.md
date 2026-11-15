@@ -4,7 +4,7 @@
 
 - Local fork branch: `port/bonito-bringup`, based on the user's fork commit `a563d834b366cafbb3dd912ce4b45c68b9a12480`; that fork is two commits ahead of upstream and includes the SDM670 shim/DTB work.
 - This fork branch has a Bonito shim source tree and DTB, but still has no built shim image, XNU kernel/payload, or iOS root image.
-- Re-authenticated GitHub CLI is available. Existing shim CI run `43717125955` failed during `mkbootimg` invocation (`ModuleNotFoundError: No module named 'gki'`) after installing Ubuntu's cross-compiler. A local workflow fix is in progress; it has not been pushed.
+- Re-authenticated GitHub CLI is available. Existing shim CI run `43717125955` failed during `mkbootimg` invocation (`ModuleNotFoundError: No module named 'gki'`) after installing Ubuntu's cross-compiler. Commit `0317fb3` locally fixes this with pinned AOSP `mkbootimg` source; it has not been pushed.
 - Device observed over ADB as Google Pixel 3a XL (`bonito`), Android 12 `SP2A.220505.008`, active slot `_a`, bootloader unlocked.
 - Verified the reversible bootloader path: fastboot reports `product=bonito`, unlocked `yes`, slot `a`; `fastboot reboot` returned the phone to Android and ADB detected it again.
 - The handset reports `dtb_idx=0` / `dtbo_idx=8`. Official TWRP 3.7.1_12-1 SHA-256 `e0781b592354a87ef8369cce36a0ed61e5bd751058d0eadf68c632c3568678d0` matched TeamWin's checksum; `fastboot boot` returned `OKAY` and recovery ADB ran as root for the FDT and `/proc/iomem` read.
@@ -14,6 +14,7 @@
 - The host has ADB/Git, no WSL distribution, and no AArch64 toolchain on `PATH`; CI is the build path. The XNU workflow is macOS-based and may use the user's authenticated fork after the local target patch is ready.
 - Main engineering blockers: a Bonito XNU platform target and memory-safe ADT, framebuffer handoff details, eMMC/SDHCI support, and Bonito input/display drivers. Sweet's current UFS root path is incompatible with Bonito's `/dev/block/mmcblk0`.
 - `tools/mkadt.py --bonito` is now an experimental ADT staging profile. It emitted an 8,340-byte ADT; structure inspection confirmed RAM `0xa2000000–0x17e2c0000`, the 36 MiB splash reservation, 1080 × 2160 geometry, and cluster IDs 0 for CPUs 0–5 / 1 for CPUs 6–7. It omits UFS. The 4320-byte ABL splash stride remains an explicit unverified candidate; TWRP's 4352-byte recovery pitch describes other buffers.
+- Local checks passed: the pinned AOSP packer plus repository unpacker round-tripped a dummy boot-header-v2 image, the Bonito ADT assertions passed, and `tools/validate-repo.py` validated all 81 patch files, 16 Python scripts, and 7 shell scripts. These checks do not replace the pending real shim CI build or device boot.
 
 ## Next concrete action
 
