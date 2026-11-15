@@ -4,7 +4,7 @@
 
 **Target:** Google Pixel 3a XL (`bonito`)
 
-**Current state (2026-11-15):** the fork contains Bonito shim source and a Bonito hardware inventory; no iOS kernel or XNU payload has been built or booted. The first shim CI run failed because Ubuntu's packaged `mkbootimg` wrapper imported a missing `gki` module. The fix is published on `port/bonito-bringup`; CI run `43724648790` then built the shim and uploaded the image plus the experimental ADT. The first temporary boot attempt was rejected by the ABL with `Unsupported`; no partition was written. Header comparison found Android 17 / malformed patch-level metadata in the original shim script, so a local follow-up now uses Android 12 / May 2022 metadata for the next boot attempt. The phone is currently in the bootloader.
+**Current state (2026-11-15):** the fork contains Bonito shim source and a Bonito hardware inventory; no iOS kernel or XNU payload has been built or booted. Shim CI run `43724648790` built the first image and experimental ADT after replacing Ubuntu's broken `mkbootimg` wrapper. Initial and Android-12-metadata variants were rejected by ABL. A local diagnostic image then returned `Booting OKAY` after its ARM64 kernel header and LZ4 frame were matched to the accepted TWRP image; it still used TWRP's ramdisk and DTB. The handset exposed neither ADB nor fastboot immediately after that handoff, and the screen state is awaiting user observation. No partition was flashed or erased.
 
 ## Goal and base
 
@@ -40,6 +40,14 @@ The normalized device profile and summarized live-tree facts are in [`targets/bo
 ### Live device-tree pass
 
 The official [Pixel 3a XL TWRP image](https://dl.twrp.me/bonito/) was checksum-verified and booted temporarily with `fastboot boot`. Its recovery FDT is version 17, 450,375 bytes, and has 2,588 nodes. It reports `dtb_idx=0` / `dtbo_idx=8`, matching Android. Its boot arguments select `dsi_sofef00_sdc_1080p_cmd_display::timing0`, identifying the active Samsung `sofef00` 1080p command-mode panel. The tree includes the panel initialization sequence and eMMC controller description. Google's nearby public artifact, commit `ee16fca33c644a4d1b7059b627786968406217bd` (May 3, 2022; merge of `SP2A.220505.002`), remains a comparison point; the phone reports `SP2A.220505.008`.
+
+## Boot image acceptance diagnosis
+
+The first CI shim image used an uncompressed ARM64 Image and malformed Android 17 OS metadata. ABL rejected it with `Unsupported`. Correcting the metadata, adding an unsigned AVB footer, and using TWRP's ramdisk and DTB did not resolve the rejection while the shim kernel remained uncompressed.
+
+The checksum-verified TWRP image uses an Android boot header v2 and an LZ4 frame beginning `04 22 4d 18 64 70 b9`. Decompressing its kernel produced a 51,591,192-byte Image with `text_offset=0x80000`, `image_size=0x3a84000`, and ARM64 flags `0xa`. The accepted diagnostic was built from the shim kernel padded to that expanded length, compressed with independent 4 MiB LZ4 blocks and a frame checksum, and packaged with TWRP's ramdisk, DTB, command line, AVB properties, and 51,810,304-byte pre-footer payload length. `fastboot boot` returned `Sending OKAY` and `Booting OKAY`; image SHA-256: `1e983adf8d4458f45ed01cdb34517708297b855b18d4795debe8aa7677f61cc3`.
+
+This confirms ABL accepted and handed off a diagnostic image. It does not confirm shim execution, graphics output, XNU entry, or iOS startup. After the command, both ADB and fastboot device listings were empty, so the phone's screen state and return-to-bootloader path still need confirmation. No partition was written. The local source/build workflow is being updated to reproduce the observed Pixel LZ4/header/AVB profile. Google's ARM64 kernel build includes `Image.lz4-dtb` ([AOSP kernel Makefile](https://android.googlesource.com/kernel/msm/+/accb124b66e0dec5ec9444dcd5612ba7a52d1f3c/arch/arm64/Makefile)); LZ4 documents the independent block, block-size, and frame-checksum options used in the reproduction ([LZ4 CLI manual](https://github.com/lz4/lz4/blob/dev/programs/lz4.1.md)).
 
 I added [`tools/fdt_dump.py`](../../tools/fdt_dump.py), a small standard-library parser for FDT blobs and Android DTBO table entries. Its text output redacts common serial, storage-CID, and verified-boot identifiers; raw device captures remain ignored. Running it on the live FDT found:
 
@@ -99,9 +107,11 @@ Keep each milestone isolated and logged. The verified recovery boot confirmed th
 - Read the fork's existing Bonito shim CI run `43717125955`; cross-compilation reached boot-image packaging, where Ubuntu's packaged `mkbootimg` failed due to its missing `gki` Python module. No artifact was uploaded.
 - Committed locally, not yet published, a workflow change using AOSP's standalone Android boot header v2 tool at pinned commit `0efe12324857ad410d64677e66347434b2346526`.
 - Pushed the reviewed branch `port/bonito-bringup` and ran shim workflow `43724648790` successfully; both `bonito-shim-boot` and `bonito-target-adt` artifacts uploaded. The 638,976-byte shim image has boot header v2, kernel/ramdisk/DTB addresses matching the known-good recovery image, and SHA-256 `95c4bc85557808900d70b46554a84566dbe51d483a6ca344c8e6bf2f05b75afe`.
-- Tried `fastboot boot` on that artifact. The bootloader rejected it with `Error verifying the received boot.img: Unsupported`; this was a temporary boot command and did not flash or erase a partition. The failed image's `os_version` word was `0x22000000` (Android 17.0.0, no patch level). A local follow-up changes the image metadata to Android 12 / May 2022; the pinned AOSP packer smoke check now produces `0x18000165`. The corrected cross-compiled image still needs a CI build and device attempt.
-- **No iOS kernel/XNU payload has been built or booted. The shim source exists, but there is no successfully packaged image in this workspace yet.**
+- The first CI artifact was rejected with `Unsupported`; its OS metadata was Android 17 with no patch level. Changing this to Android 12 / May 2022 produced the expected `0x18000165` field but did not by itself make ABL accept the image.
+- A local TWRP-shaped diagnostic with a raw shim kernel remained rejected. A default LZ4 frame changed the error to `Invalid Parameter`. A frame using TWRP's exact LZ4 header profile plus matching ARM64 Image layout and AVB footer returned `Booting OKAY` under `fastboot boot`. It used TWRP ramdisk/DTB; the repository's Bonito DTB and empty shim ramdisk have not yet been tried in an accepted image.
+- The source build and CI workflow are being updated to reproduce that accepted layout. The update is not yet committed or run in CI.
+- **No iOS kernel/XNU payload has been built or booted.** The temporary boot milestone only confirms ABL handoff for a diagnostic shim image.
 
 ## Immediate next action
 
-Commit and push the Android 12 header metadata correction, rerun the shim workflow, download and inspect the new v2 image, and retry `fastboot boot` for the reversible shim console/probe milestone. In parallel, retain the experimental Bonito ADT as staging only; it does not make Sweet's XNU platform target Bonito-compatible by itself. Do not build a userdata image until eMMC read-only access and a restore plan are proven.
+Finish the local TWRP-compatible LZ4/header/AVB changes, publish them to the Bonito branch, run shim CI, inspect the artifact, and try it with temporary `fastboot boot`. Confirm phone display and regain a known bootloader/Android state before building the Bonito XNU target. Keep the experimental ADT as staging only; it does not make Sweet's XNU platform target Bonito-compatible by itself. Do not build a userdata image until eMMC read-only access and a restore plan are proven.

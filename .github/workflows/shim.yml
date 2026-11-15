@@ -19,13 +19,16 @@ jobs:
       - name: Install ARM64 cross-compiler and boot-image tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu cpio gzip
+          sudo apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu cpio gzip lz4
           # Ubuntu's mkbootimg wrapper imports gki.generate_gki_certificate,
           # which is absent from the package on the current runner image.
           # Use the standalone AOSP header-v2 tool at a pinned revision.
           mkdir -p .tools
           git clone https://android.googlesource.com/platform/system/tools/mkbootimg .tools/mkbootimg
           git -C .tools/mkbootimg checkout --quiet 0efe12324857ad410d64677e66347434b2346526
+          # This Pixel's accepted TWRP image carries an unsigned AVB hash footer.
+          git clone https://android.googlesource.com/platform/external/avb .tools/avb
+          git -C .tools/avb checkout --quiet 3328b7b60ae384e1a92f44d7e6f3ac021c2b05be
           mkdir -p .tools/bin
           cat > .tools/bin/mkbootimg <<'EOF'
           #!/usr/bin/env bash
@@ -39,6 +42,25 @@ jobs:
           sed -i 's/\r$//' shim/build.sh
           chmod +x shim/build.sh
           bash shim/build.sh
+
+      - name: Add AVB hash footer for unlocked boot
+        run: |
+          # The accepted TWRP image's original payload length is 51,810,304 bytes.
+          image_size=$(stat -c %s shim/out/shim-boot.img)
+          if [ "$image_size" -le 51810304 ]; then
+            truncate -s 51810304 shim/out/shim-boot.img
+          fi
+          python3 .tools/avb/avbtool.py add_hash_footer \
+            --image shim/out/shim-boot.img \
+            --partition_name boot \
+            --partition_size 67108864 \
+            --algorithm NONE \
+            --hash_algorithm sha256 \
+            --salt b89d58c893e911aa85f0a4ff99d77676e8dede540a7cd1b2b5465949656b7030 \
+            --prop 'com.android.build.boot.fingerprint:google/twrp_bonito/bonito:99.87.36/SP2A.220405.004/10:eng/test-keys' \
+            --prop com.android.build.boot.os_version:99.87.36 \
+            --prop com.android.build.boot.security_patch:2099-12-31
+          python3 .tools/avb/avbtool.py info_image --image shim/out/shim-boot.img > shim/out/avb-footer.txt
 
       - name: Generate experimental Bonito ADT
         run: |

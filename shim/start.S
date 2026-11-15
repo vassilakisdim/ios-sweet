@@ -7,8 +7,8 @@
 _head:
 	b	_start			/* code0 */
 	.long	0			/* code1 */
-	.quad	0			/* text_offset */
-	.quad	_end			/* image_size (linked at 0) */
+	.quad	0x80000		/* Bonito ABL text_offset */
+	.quad	0x3a84000		/* image_size from the accepted Pixel 3a kernel */
 	.quad	0xa			/* flags: LE, 4K pages, place anywhere */
 	.quad	0			/* res2 */
 	.quad	0			/* res3 */
