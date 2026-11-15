@@ -1,0 +1,31 @@
+﻿name: shim
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "shim/**"
+      - ".github/workflows/shim.yml"
+
+jobs:
+  build-shim:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ARM64 cross-compiler and mkbootimg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu cpio gzip mkbootimg
+
+      - name: Build bonito shim-boot.img
+        run: |
+          chmod +x shim/build.sh
+          bash shim/build.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bonito-shim-boot
+          path: shim/out/shim-boot.img
+          retention-days: 7

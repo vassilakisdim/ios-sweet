@@ -384,13 +384,7 @@ void shim_main(uint64_t dtb)
 	con_skip();
 
 	/* No payload: probe the internal UFS while the MMU is still off. */
-	stage = "ufs";
-	test_ufs();
-	con_skip();
-	/* Keep the probe results on screen (later tests clear it); reset after 3 min. */
-	con_str("UFS", "probe done, reset in ~3 min");
-	delay_ms(180000);
-	reset(20);
+	/* bonito uses eMMC (sdhci@7c4000), skip UFS probe and run MMU/GIC tests */
 
 	stage = "fill off";
 	uint64_t fill_off = ticks_fill(RED);
