@@ -17,7 +17,7 @@ jobs:
       - name: Install ARM64 cross-compiler and mkbootimg
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu cpio gzip mkbootimg
+          sudo apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu gawk cpio gzip mkbootimg
 
       - name: Build bonito shim-boot.img
         run: |
